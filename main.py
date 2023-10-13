@@ -124,11 +124,11 @@ class Body:
         # Reset trail.
         self.trail = []
 
-    def update_trail(self):
+    def update_trail(self, framerate):
         """Adds the current position to the trail and removes the oldest position from
         the trail if the number of points in the trail is too high.
         """
-        trail_max = 2**8
+        trail_max = framerate
 
         self.trail.append((self.position_x, self.position_y))
 
@@ -234,7 +234,7 @@ def main() -> None:
         for body in bodies:
             # Update the position and trail.
             body.update_position(timestep=timestep)
-            body.update_trail()
+            body.update_trail(framerate)
 
             # Draw the body and trail.
             pygame.draw.circle(
@@ -243,7 +243,7 @@ def main() -> None:
                 (body.position_x, body.position_y),
                 body.radius,
             )
-            if framerate > (framerate_max - 10) and len(body.trail) > 2:
+            if len(body.trail) > 2:
                 pygame.draw.aalines(
                     window,
                     body.color,
