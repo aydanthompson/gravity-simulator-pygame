@@ -55,7 +55,7 @@ class Body:
         dy = self.position_y - second_body.position_y
         d = math.sqrt(dx**2 + dy**2)
 
-        if d <= (self.radius + second_body.radius) / 2:
+        if d <= (self.radius + second_body.radius):
             force = 0
             self.combine(second_body, bodies)
         else:
