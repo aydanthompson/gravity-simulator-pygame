@@ -11,18 +11,18 @@ class Body:
         self,
         name: str,
         mass: int | float,
-        pos_x: int | float,
-        pos_y: int | float,
-        vel_x: int | float = 0,
-        vel_y: int | float = 0,
+        position_x: int | float,
+        position_y: int | float,
+        velocity_x: int | float = 0,
+        velocity_y: int | float = 0,
         color: tuple = (255, 255, 255),
     ):
         self.name = name
         self.mass = mass
-        self.pos_x = pos_x
-        self.pos_y = pos_y
-        self.vel_x = vel_x
-        self.vel_y = vel_y
+        self.position_x = position_x
+        self.position_y = position_y
+        self.velocity_x = velocity_x
+        self.velocity_y = velocity_y
         self.color = color
 
         self.force_x = 0.0
@@ -30,9 +30,10 @@ class Body:
 
         self.trail = []
 
-        self.update_radius()
+        self._update_radius()
+        self._update_momentum()
 
-    def update_radius(self):
+    def _update_radius(self):
         # Assume the mass is the area of the circle.
         self.radius = math.sqrt(self.mass / math.pi)
         return self
@@ -41,22 +42,22 @@ class Body:
         """Updates the force applied to this body for each body in `bodies`."""
         for second_body in bodies:
             if self != second_body:
-                self._update_force(second_body)
+                self._update_force(second_body, bodies)
         return self
 
-    def _update_force(self, second_body: "Body"):
+    def _update_force(self, second_body: "Body", bodies: list["Body"]):
         # In our universe, G (gravitational constant) is equal to 6.67430e-11, but in
         # this simulation G can be set to different values to change the proportionality
         # of the force applied to each body.
         G = 1.0
 
-        dx = self.pos_x - second_body.pos_x
-        dy = self.pos_y - second_body.pos_y
+        dx = self.position_x - second_body.position_x
+        dy = self.position_y - second_body.position_y
         d = math.sqrt(dx**2 + dy**2)
 
-        if d <= self.radius + second_body.radius:
+        if d <= (self.radius + second_body.radius) / 2:
             force = 0
-            # self.combine(other_body, bodies)
+            self.combine(second_body, bodies)
         else:
             # Newton's Universal Law of Gravitation:
             # https://phys.libretexts.org/Bookshelves/Conceptual_Physics/Introduction_to_Physics_(Park)/02%3A_Mechanics_I_-_Motion_and_Forces/02%3A_Dynamics/2.09%3A_Newtons_Universal_Law_of_Gravitation
@@ -69,20 +70,21 @@ class Body:
 
     def update_position(self, timestep: float = 1.0):
         # a = F / m
-        self.accel_x = self.force_x / self.mass
-        self.accel_y = self.force_y / self.mass
+        self.acceleration_x = self.force_x / self.mass
+        self.acceleration_y = self.force_y / self.mass
 
         # v = at
         # v2 = v1 + at
-        self.vel_x += self.accel_x * timestep
-        self.vel_y += self.accel_y * timestep
+        self.velocity_x += self.acceleration_x * timestep
+        self.velocity_y += self.acceleration_y * timestep
 
         # s = vt
         # s2 = s1 + vt
-        self.pos_x += self.vel_x * timestep
-        self.pos_y += self.vel_y * timestep
+        self.position_x += self.velocity_x * timestep
+        self.position_y += self.velocity_y * timestep
 
         self._reset_force()
+        self._update_momentum()
         return self
 
     def _reset_force(self):
@@ -90,17 +92,36 @@ class Body:
         self.force_y = 0.0
         return self
 
-    def combine(self, other_body: "Body", bodies: list):
-        self.mass += other_body.mass
-        self.radius = math.sqrt(self.radius**2 + other_body.radius**2)
-        self.pos_x = (self.pos_x + other_body.pos_x) / 2
-        self.pos_y = (self.pos_y + other_body.pos_y) / 2
-        self.vel_x = (self.vel_x + other_body.vel_x) / 2
-        self.vel_y = (self.vel_y + other_body.vel_y) / 2
+    def _update_momentum(self) -> "Body":
+        self.momentum_x = self.mass * self.velocity_x
+        self.momentum_y = self.mass * self.velocity_y
+        return self
+
+    def combine(self, second_body: "Body", bodies: list["Body"]):
+        # Combine mass.
+        self.mass += second_body.mass
+        self._update_radius()
+
+        # Combine position.
+        self.position_x = (self.position_x + second_body.position_x) / 2
+        self.position_y = (self.position_y + second_body.position_y) / 2
+
+        # Combine momentum and update velocity.
+        self.momentum_x += second_body.momentum_x
+        self.momentum_y += second_body.momentum_y
+        self.velocity_x = self.momentum_x / self.mass
+        self.velocity_y = self.momentum_y / self.mass
+
+        # Combine colors.
         self.color = tuple(
-            [int(self.color[i] + other_body.color[i]) / 2 for i in range(3)]
+            (color_1 + color_2) // 2
+            for _, (color_1, color_2) in enumerate(zip(self.color, second_body.color))
         )
-        bodies.remove(other_body)
+
+        bodies.remove(second_body)
+
+        # Reset trail.
+        self.trail = []
 
     def update_trail(self):
         """Adds the current position to the trail and removes the oldest position from
@@ -108,7 +129,7 @@ class Body:
         """
         trail_max = 2**8
 
-        self.trail.append((self.pos_x, self.pos_y))
+        self.trail.append((self.position_x, self.position_y))
 
         # Remove the oldest position from the trail if
         # the number of points exceeds `trail_max`.
@@ -116,17 +137,20 @@ class Body:
             self.trail.pop(0)
         return self
 
-    def get_pos(self):
-        return (self.pos_x, self.pos_y)
+    def get_position(self):
+        return (self.position_x, self.position_y)
 
-    def get_vel(self):
-        return (self.vel_x, self.vel_y)
+    def get_velocity(self):
+        return (self.velocity_x, self.velocity_y)
 
-    def get_accel(self):
-        return (self.accel_x, self.accel_y)
+    def get_acceleration(self):
+        return (self.acceleration_x, self.acceleration_y)
 
     def get_force(self):
         return (self.force_x, self.force_y)
+
+    def get_momentum(self):
+        return (self.momentum_x, self.momentum_y)
 
 
 def main() -> None:
@@ -143,22 +167,21 @@ def main() -> None:
     bodies: list["Body"] = []
     bodies.append(
         Body(
-            "a",
-            mass=250,
-            pos_x=(WINDOW_SIZE[0] / 2) - 100,
-            pos_y=WINDOW_SIZE[1] / 2,
+            "red",
+            mass=100,
+            position_x=(WINDOW_SIZE[0] / 2) - 100,
+            position_y=WINDOW_SIZE[1] / 2,
             color=(255, 0, 0),
-            vel_x=0.1,
+            velocity_x=1,
         )
     )
     bodies.append(
         Body(
-            "b",
-            mass=250,
-            pos_x=(WINDOW_SIZE[0] / 2) + 100,
-            pos_y=WINDOW_SIZE[1] / 2,
+            "blue",
+            mass=100,
+            position_x=(WINDOW_SIZE[0] / 2) + 100,
+            position_y=WINDOW_SIZE[1] / 2,
             color=(0, 0, 255),
-            vel_x=-0.1,
         )
     )
 
@@ -178,6 +201,7 @@ def main() -> None:
         for body in bodies:
             body.update_force(bodies)
 
+        # Update the position of the body and redraw.
         for body in bodies:
             # Update the position and trail.
             body.update_position(timestep=timestep)
@@ -187,7 +211,7 @@ def main() -> None:
             pygame.draw.circle(
                 window,
                 body.color,
-                (body.pos_x, body.pos_y),
+                (body.position_x, body.position_y),
                 body.radius,
             )
             if len(body.trail) > 2:
@@ -217,7 +241,7 @@ def main() -> None:
 
         pygame.display.flip()
 
-        clock.tick()
+        clock.tick(120)
 
 
 if __name__ == "__main__":
