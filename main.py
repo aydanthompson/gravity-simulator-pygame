@@ -170,7 +170,7 @@ def main() -> None:
         ],
         "random": [
             Body(
-                i,
+                str(i),
                 mass=randint(1, 100),
                 position_x=randint(0, WINDOW_SIZE[0]),
                 position_y=randint(0, WINDOW_SIZE[1]),
