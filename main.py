@@ -155,6 +155,7 @@ class Body:
 
 def main() -> None:
     WINDOW_SIZE = (1920, 1080)
+    framerate_max = 120
 
     pygame.init()
     pygame.font.init()
@@ -197,31 +198,6 @@ def main() -> None:
 
         window.fill((0, 0, 0))
 
-        # Update the force applied to each body.
-        for body in bodies:
-            body.update_force(bodies)
-
-        # Update the position of the body and redraw.
-        for body in bodies:
-            # Update the position and trail.
-            body.update_position(timestep=timestep)
-            body.update_trail()
-
-            # Draw the body and trail.
-            pygame.draw.circle(
-                window,
-                body.color,
-                (body.position_x, body.position_y),
-                body.radius,
-            )
-            if len(body.trail) > 2:
-                pygame.draw.aalines(
-                    window,
-                    body.color,
-                    False,
-                    body.trail,
-                )
-
         # Draw the framerate, frametime, and the number of
         # bodies in the top-left corner of the window.
         framerate = clock.get_fps()
@@ -239,9 +215,34 @@ def main() -> None:
         )
         window.blit(bodies_text, (10, 50))
 
+        # Update the force applied to each body.
+        for body in bodies:
+            body.update_force(bodies)
+
+        # Update the position of the body and redraw.
+        for body in bodies:
+            # Update the position and trail.
+            body.update_position(timestep=timestep)
+            body.update_trail()
+
+            # Draw the body and trail.
+            pygame.draw.circle(
+                window,
+                body.color,
+                (body.position_x, body.position_y),
+                body.radius,
+            )
+            if framerate > (framerate_max - 10) and len(body.trail) > 2:
+                pygame.draw.aalines(
+                    window,
+                    body.color,
+                    False,
+                    body.trail,
+                )
+
         pygame.display.flip()
 
-        clock.tick(120)
+        clock.tick(framerate_max)
 
 
 if __name__ == "__main__":
