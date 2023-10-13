@@ -141,7 +141,7 @@ class Body:
 
 def main() -> None:
     WINDOW_SIZE = (1920, 1080)
-    framerate_max = 120
+    FRAMERATE_MAX = 120
 
     pygame.init()
     pygame.font.init()
@@ -238,7 +238,7 @@ def main() -> None:
 
         pygame.display.flip()
 
-        clock.tick(framerate_max)
+        clock.tick(FRAMERATE_MAX)
 
 
 if __name__ == "__main__":
