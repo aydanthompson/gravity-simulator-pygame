@@ -1,4 +1,5 @@
 import math
+from random import randint
 import sys
 
 import pygame
@@ -164,27 +165,37 @@ def main() -> None:
     window = pygame.display.set_mode(WINDOW_SIZE)
     pygame.display.set_caption("Gravity Simulator")
 
-    # Add the various bodies.
-    bodies: list["Body"] = []
-    bodies.append(
-        Body(
-            "red",
-            mass=100,
-            position_x=(WINDOW_SIZE[0] / 2) - 100,
-            position_y=WINDOW_SIZE[1] / 2,
-            color=(255, 0, 0),
-            velocity_x=1,
-        )
-    )
-    bodies.append(
-        Body(
-            "blue",
-            mass=100,
-            position_x=(WINDOW_SIZE[0] / 2) + 100,
-            position_y=WINDOW_SIZE[1] / 2,
-            color=(0, 0, 255),
-        )
-    )
+    presets = {
+        "momentum-demo": [
+            Body(
+                "red",
+                mass=100,
+                position_x=(WINDOW_SIZE[0] / 2) - 100,
+                position_y=WINDOW_SIZE[1] / 2,
+                color=(255, 0, 0),
+                velocity_x=1,
+            ),
+            Body(
+                "blue",
+                mass=100,
+                position_x=(WINDOW_SIZE[0] / 2) + 100,
+                position_y=WINDOW_SIZE[1] / 2,
+                color=(0, 0, 255),
+            ),
+        ],
+        "random": [
+            Body(
+                i,
+                mass=randint(1, 100),
+                position_x=randint(0, WINDOW_SIZE[0]),
+                position_y=randint(0, WINDOW_SIZE[1]),
+                color=(randint(0, 255), randint(0, 255), randint(0, 255)),
+            )
+            for i in range(250)
+        ],
+    }
+    # Select the setup you wish to run.
+    bodies: list["Body"] = presets["random"]
 
     clock = pygame.time.Clock()
     timestep = 1
