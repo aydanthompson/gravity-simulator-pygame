@@ -138,21 +138,6 @@ class Body:
             self.trail.pop(0)
         return self
 
-    def get_position(self):
-        return (self.position_x, self.position_y)
-
-    def get_velocity(self):
-        return (self.velocity_x, self.velocity_y)
-
-    def get_acceleration(self):
-        return (self.acceleration_x, self.acceleration_y)
-
-    def get_force(self):
-        return (self.force_x, self.force_y)
-
-    def get_momentum(self):
-        return (self.momentum_x, self.momentum_y)
-
 
 def main() -> None:
     WINDOW_SIZE = (1920, 1080)
