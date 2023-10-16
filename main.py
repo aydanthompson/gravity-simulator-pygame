@@ -35,8 +35,9 @@ class Body:
         self._update_momentum()
 
     def _update_radius(self):
-        # Assume the mass is the area of the circle.
-        self.radius = math.sqrt(self.mass / math.pi)
+        # Using a combined formula for the volume of a sphere and the density.
+        density = 1.0
+        self.radius = math.cbrt((3 * self.mass) / (4 * math.pi * density))
         return self
 
     def update_force(self, bodies: list["Body"]):
