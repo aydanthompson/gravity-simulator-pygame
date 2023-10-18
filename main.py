@@ -141,7 +141,40 @@ class Body:
 
 
 def main() -> None:
-    WINDOW_SIZE = (1920, 1080)
+    def preset_momentum_demo():
+        bodies = [
+            Body(
+                "red",
+                mass=1000,
+                position_x=(WINDOW_SIZE[0] / 2) - 100,
+                position_y=WINDOW_SIZE[1] / 2,
+                color=(255, 0, 0),
+                velocity_x=1,
+            ),
+            Body(
+                "blue",
+                mass=1000,
+                position_x=(WINDOW_SIZE[0] / 2) + 100,
+                position_y=WINDOW_SIZE[1] / 2,
+                color=(0, 0, 255),
+            ),
+        ]
+        return bodies
+
+    def preset_random(body_count: int):
+        bodies = [
+            Body(
+                i,
+                mass=randint(1, 100),
+                position_x=randint(0, WINDOW_SIZE[0]),
+                position_y=randint(0, WINDOW_SIZE[1]),
+                color=(randint(0, 255), randint(0, 255), randint(0, 255)),
+            )
+            for i in range(body_count)
+        ]
+        return bodies
+
+    WINDOW_SIZE = (1080, 1080)
     FRAMERATE_MAX = 120
 
     pygame.init()
@@ -151,37 +184,8 @@ def main() -> None:
     window = pygame.display.set_mode(WINDOW_SIZE)
     pygame.display.set_caption("Gravity Simulator")
 
-    presets = {
-        "momentum-demo": [
-            Body(
-                "red",
-                mass=100,
-                position_x=(WINDOW_SIZE[0] / 2) - 100,
-                position_y=WINDOW_SIZE[1] / 2,
-                color=(255, 0, 0),
-                velocity_x=1,
-            ),
-            Body(
-                "blue",
-                mass=100,
-                position_x=(WINDOW_SIZE[0] / 2) + 100,
-                position_y=WINDOW_SIZE[1] / 2,
-                color=(0, 0, 255),
-            ),
-        ],
-        "random": [
-            Body(
-                i,
-                mass=randint(1, 100),
-                position_x=randint(0, WINDOW_SIZE[0]),
-                position_y=randint(0, WINDOW_SIZE[1]),
-                color=(randint(0, 255), randint(0, 255), randint(0, 255)),
-            )
-            for i in range(250)
-        ],
-    }
-    # Select the setup you wish to run.
-    bodies: list["Body"] = presets["random"]
+    # Enter the preset you wish to use.
+    bodies: list["Body"] = preset_random(100)
 
     clock = pygame.time.Clock()
     timestep = 1
