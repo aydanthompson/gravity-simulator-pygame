@@ -1,5 +1,4 @@
 import math
-from random import randint
 import sys
 
 import pygame
@@ -11,15 +10,17 @@ class Body:
     def __init__(
         self,
         name: str,
-        mass: int | float,
-        position_x: int | float,
-        position_y: int | float,
-        velocity_x: int | float = 0,
-        velocity_y: int | float = 0,
+        mass: float,
+        density: float,
+        position_x: float,
+        position_y: float,
+        velocity_x: float = 0.0,
+        velocity_y: float = 0.0,
         color: tuple = (255, 255, 255),
     ):
         self.name = name
         self.mass = mass
+        self.density = density
         self.position_x = position_x
         self.position_y = position_y
         self.velocity_x = velocity_x
@@ -35,8 +36,7 @@ class Body:
         self._update_momentum()
 
     def _update_radius(self):
-        # Assume the mass is the area of the circle.
-        self.radius = math.sqrt(self.mass / math.pi)
+        self.radius = math.cbrt((3 * self.mass) / (4 * math.pi * self.density))
         return self
 
     def update_force(self, bodies: list["Body"]):
@@ -47,10 +47,8 @@ class Body:
         return self
 
     def _update_force(self, second_body: "Body", bodies: list["Body"]):
-        # In our universe, G (gravitational constant) is equal to 6.67430e-11, but in
-        # this simulation G can be set to different values to change the proportionality
-        # of the force applied to each body.
-        G = 1.0
+        # G is the gravitational constant.
+        G = 6.674e-11
 
         dx = self.position_x - second_body.position_x
         dy = self.position_y - second_body.position_y
@@ -138,10 +136,146 @@ class Body:
             self.trail.pop(0)
         return self
 
+    def get_scaled_position(
+        self,
+        scale: int | float,
+        window_size: tuple[int, int],
+    ) -> tuple[float, float]:
+        """Returns the position, centred, with a scale factor applied."""
+        position_x = (self.position_x / scale) + (window_size[0] / 2)
+        position_y = (self.position_y / scale) + (window_size[1] / 2)
+        return (position_x, position_y)
+
+    def get_scaled_radius(self, scale: int | float):
+        """Returns the radius, with a scale factor applied"""
+        return math.pow(self.radius, scale)
+
+    def get_scaled_trail(
+        self,
+        scale: int | float,
+        window_resolution: tuple[int, int],
+    ) -> list[tuple[float, float]]:
+        """Returns the trail, centred, with a scale factor applied."""
+        trail = [
+            (
+                (position_x / scale) + (window_resolution[0] / 2),
+                (position_y / scale) + (window_resolution[1] / 2),
+            )
+            for (position_x, position_y) in self.trail
+        ]
+        return trail
+
 
 def main() -> None:
-    WINDOW_SIZE = (1920, 1080)
+    def preset_solar_system() -> list["Body"]:
+        bodies = [
+            # The density of the Sun is much higher than in the real world so that you
+            # can see it in the same frame as the other bodies.
+            Body(
+                "Sun",
+                mass=1.989e30,
+                density=1.622e5,
+                position_x=0.0,
+                position_y=0.0,
+                color=(255, 255, 0),
+            ),
+            Body(
+                "Mercury",
+                mass=0.330e24,
+                density=5429,
+                position_x=-57.9e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=47.4e3,
+                color=(168, 168, 168),
+            ),
+            Body(
+                "Venus",
+                mass=4.87e24,
+                density=5243,
+                position_x=-108.2e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=35.0e3,
+                color=(255, 228, 181),
+            ),
+            Body(
+                "Earth",
+                mass=5.97e24,
+                density=5514,
+                position_x=-149.6e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=29.8e3,
+                color=(0, 0, 255),
+            ),
+            Body(
+                "Mars",
+                mass=0.642e24,
+                density=3934,
+                position_x=-228e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=24.1e3,
+                color=(255, 99, 71),
+            ),
+            Body(
+                "Jupiter",
+                mass=1898e24,
+                density=1326,
+                position_x=-778.5e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=13.1e3,
+                color=(255, 192, 0),
+            ),
+            Body(
+                "Saturn",
+                mass=568e24,
+                density=687,
+                position_x=-1432.0e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=9.7e3,
+                color=(255, 215, 0),
+            ),
+            Body(
+                "Uranus",
+                mass=86.8e24,
+                density=1270,
+                position_x=-2867.0e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=6.8e3,
+                color=(173, 216, 230),
+            ),
+            Body(
+                "Neptune",
+                mass=102e24,
+                density=1638,
+                position_x=-4515.0e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=5.4e3,
+                color=(0, 0, 139),
+            ),
+            Body(
+                "Pluto",
+                mass=0.0130e24,
+                density=1850,
+                position_x=-5906.4e9,
+                position_y=0.0,
+                velocity_x=0,
+                velocity_y=4.7e3,
+                color=(139, 134, 130),
+            ),
+        ]
+        return bodies
+
+    WINDOW_SIZE = (1280, 1280)
     FRAMERATE_MAX = 120
+    SCALE_POSITION = 10e9
+    SCALE_RADIUS = 1 / 12
 
     pygame.init()
     pygame.font.init()
@@ -150,40 +284,11 @@ def main() -> None:
     window = pygame.display.set_mode(WINDOW_SIZE)
     pygame.display.set_caption("Gravity Simulator")
 
-    presets = {
-        "momentum-demo": [
-            Body(
-                "red",
-                mass=100,
-                position_x=(WINDOW_SIZE[0] / 2) - 100,
-                position_y=WINDOW_SIZE[1] / 2,
-                color=(255, 0, 0),
-                velocity_x=1,
-            ),
-            Body(
-                "blue",
-                mass=100,
-                position_x=(WINDOW_SIZE[0] / 2) + 100,
-                position_y=WINDOW_SIZE[1] / 2,
-                color=(0, 0, 255),
-            ),
-        ],
-        "random": [
-            Body(
-                str(i),
-                mass=randint(1, 100),
-                position_x=randint(0, WINDOW_SIZE[0]),
-                position_y=randint(0, WINDOW_SIZE[1]),
-                color=(randint(0, 255), randint(0, 255), randint(0, 255)),
-            )
-            for i in range(250)
-        ],
-    }
-    # Select the setup you wish to run.
-    bodies: list["Body"] = presets["random"]
+    # Enter the preset you wish to use.
+    bodies: list["Body"] = preset_solar_system()
 
     clock = pygame.time.Clock()
-    timestep = 1
+    timestep = 60 * 60 * 24
 
     # Game loop.
     while True:
@@ -225,15 +330,15 @@ def main() -> None:
             pygame.draw.circle(
                 window,
                 body.color,
-                (body.position_x, body.position_y),
-                body.radius,
+                body.get_scaled_position(SCALE_POSITION, WINDOW_SIZE),
+                body.get_scaled_radius(SCALE_RADIUS),
             )
             if len(body.trail) > 2:
                 pygame.draw.aalines(
                     window,
                     body.color,
                     False,
-                    body.trail,
+                    body.get_scaled_trail(SCALE_POSITION, WINDOW_SIZE),
                 )
 
         pygame.display.flip()
