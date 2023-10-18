@@ -1,5 +1,5 @@
 import math
-from random import randint
+from random import randint, random, lognormvariate, normalvariate
 import sys
 
 import pygame
@@ -105,8 +105,8 @@ class Body:
         self._update_radius()
 
         # Combine position.
-        self.position_x = (self.position_x + second_body.position_x) / 2
-        self.position_y = (self.position_y + second_body.position_y) / 2
+        self.position_x = (self.position_x * (self.mass / (self.mass + second_body.mass)) + second_body.position_x * (second_body.mass / (self.mass + second_body.mass)))
+        self.position_y = (self.position_y * (self.mass / (self.mass + second_body.mass)) + second_body.position_y * (second_body.mass / (self.mass + second_body.mass)))
 
         # Combine momentum and update velocity.
         self.momentum_x += second_body.momentum_x
@@ -141,11 +141,11 @@ class Body:
 
 
 def main() -> None:
-    def preset_momentum_demo():
+    def preset_momentum_demo() -> list["Body"]:
         bodies = [
             Body(
                 "red",
-                mass=1000,
+                mass=10000,
                 position_x=(WINDOW_SIZE[0] / 2) - 100,
                 position_y=WINDOW_SIZE[1] / 2,
                 color=(255, 0, 0),
@@ -153,7 +153,7 @@ def main() -> None:
             ),
             Body(
                 "blue",
-                mass=1000,
+                mass=10,
                 position_x=(WINDOW_SIZE[0] / 2) + 100,
                 position_y=WINDOW_SIZE[1] / 2,
                 color=(0, 0, 255),
@@ -161,7 +161,7 @@ def main() -> None:
         ]
         return bodies
 
-    def preset_random(body_count: int):
+    def preset_random(body_count: int) -> list["Body"]:
         bodies = [
             Body(
                 i,
@@ -172,6 +172,46 @@ def main() -> None:
             )
             for i in range(body_count)
         ]
+        return bodies
+
+    def preset_circle(body_count: int, velocity: int, radius: int, width: int) -> list["Body"]:
+        def generate_point_on_circle(velocity: int, radius: int, width: float) -> tuple[float, float, float, float]:
+            centre_x = WINDOW_SIZE[0] / 2
+            centre_y = WINDOW_SIZE[1] / 2
+
+            r = radius + width * random()
+            theta = random() * 2 * math.pi
+
+            x = centre_x + r * math.cos(theta)
+            y = centre_y + r * math.sin(theta)
+
+            velocity = normalvariate(velocity, 4)
+            velocity_x = velocity * math.cos(theta + math.pi / 2)
+            velocity_y = velocity * math.sin(theta + math.pi / 2)
+            return x, y, velocity_x, velocity_y
+
+        bodies = []
+        bodies.append(
+            Body(
+                'centre',
+                mass=1000000,
+                position_x=WINDOW_SIZE[0] / 2,
+                position_y=WINDOW_SIZE[1] / 2,
+            )
+        )
+        for i in range(body_count):
+            x, y, velocity_x, velocity_y = generate_point_on_circle(radius, width)
+            bodies.append(
+                Body(
+                    i,
+                    mass=lognormvariate(4, 0.9),
+                    position_x=x,
+                    position_y=y,
+                    velocity_x=velocity_x,
+                    velocity_y=velocity_y,
+                    color=(randint(0, 255), randint(0, 255), randint(0, 255)),
+                )
+            )
         return bodies
 
     WINDOW_SIZE = (1080, 1080)
@@ -185,10 +225,10 @@ def main() -> None:
     pygame.display.set_caption("Gravity Simulator")
 
     # Enter the preset you wish to use.
-    bodies: list["Body"] = preset_random(100)
+    bodies: list["Body"] = preset_circle(25, 65, 250, 100)
 
     clock = pygame.time.Clock()
-    timestep = 1
+    timestep = 0.1
 
     # Game loop.
     while True:
